@@ -1,0 +1,14 @@
+<%- include("partials/header"); -%>
+<h1>Edit <%=title%></h1>
+<form class="" action="/toeditstory" method="post">
+    <div class="form-group">
+      <label>Title</label>
+      <input class="form-control" type="text" name="storyTitle" value="<%=title%>">
+      <label>Story</label>
+      <textarea class="form-control" name="storyBody" rows="5" cols="30"><%=content%></textarea>
+    </div>
+    <br>
+    <button class="btn btn-primary" type="submit" name="button" value="<%=storyId%>">Save</button>
+</form>
+<br>
+<%- include("partials/footer"); -%>

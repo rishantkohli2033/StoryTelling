@@ -1,0 +1,14 @@
+<%- include("partials/header"); -%>
+<h1>New Story</h1>
+<form class="" action="/newstory" method="post">
+    <div class="form-group">
+      <label>Title</label>
+      <input class="form-control" type="text" name="storyTitle" placeholder="<%=title%>"> 
+      <label>Story</label>
+      <textarea class="form-control" name="storyBody" rows="5" cols="30" placeholder="<%=content%>"></textarea>
+    </div>
+    <br>
+    <button class="btn btn-primary" type="submit" name="button">Save</button>
+</form>
+<br>
+<%- include("partials/footer"); -%>

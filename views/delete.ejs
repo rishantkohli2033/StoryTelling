@@ -1,0 +1,26 @@
+<%- include("partials/header"); -%>
+<% if(stories.length!=0){ %>
+    <form action="/delete" method="post">
+    <%  stories.forEach(function(story){ %>
+
+        <input type="checkbox" value="<%=story._id%>" name="input" id="<%=story._id%>"><%=story.title%></input>
+        <p>
+        <% if(story.content.length>=100){ %>
+        <%=story.content.substring(0, 100) + " ..."%>
+        <a href="/stories/<%=story._id%>">Read More</a>
+        <% } else{ %>
+            <%=story.content%>
+        <% } %>
+        </p>
+        <% }) %>
+        
+            <div class="text-center">
+                <button class="btn btn-primary" type="submit" name="button" value="new">Delete</button>
+            </div>
+    </form><% } else { %>
+    <div class="text-center noStoriesDelPage">
+        <h1>No Stories</h1>
+    </div><% } %>
+ 
+
+<%- include("partials/footer"); -%>

@@ -1,0 +1,48 @@
+<%- include("partials/header"); -%>
+<section id="features">
+    <!--to centre the container-->
+    <div class="container-fluid centering-div">
+       <div class="row">
+         <div class="feature-box col-lg-4 ">
+           <h3 class="feature-title">Write a Story</h3> <!--br used to divide the text from icon-->
+           <!-- Example split danger button -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary">Write</button>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden"></span>
+                </button>
+                <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/stories/edit/<%=storyId%>">Continue Story</a></li>
+                <li><a class="dropdown-item" href="/newstory">+ New Story</a></li>
+                
+                </ul>
+            </div>
+         </div>
+
+
+         <div class="feature-box col-lg-4 ">
+           <h3 class="feature-title">Your Stories</h3>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary">Read</button>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden"></span>
+                </button>
+                <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/read">Read a Story</a></li>
+                <li><a class="dropdown-item" href="/edit">Edit a Story</a></li>
+                <li><a class="dropdown-item" href="/delete">Delete a Story</a></li>
+                
+                </ul>
+            </div>
+         </div>
+
+
+         <div class="feature-box col-lg-4 ">
+           <h3 class="feature-title">Publish a Story</h3>
+           <button type="button" class="btn btn-primary">Publish</button>
+         </div>
+
+       </div>
+     </div>
+ </section>
+<%- include("partials/footer"); -%>
