@@ -6,6 +6,9 @@ const ejs = require("ejs");
 //const _ = require("lodash");
 //const popup = require("popups");
 const mongoose = require("mongoose");
+const session = require('express-session');
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 
 const app = express();
 
@@ -14,31 +17,120 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
+app.use(session({
+    secret: 'Our little secret.',
+    resave: false,
+    saveUninitialized: false,
+    //cookie: { secure: true }
+  }))
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 mongoose.connect("mongodb://127.0.0.1:27017/storyDB", {useNewUrlParser: true});
 
 const storySchema = {
+    user: String,
     title: String,
     content: String,
 };
 
+const userSchema = new mongoose.Schema({
+    email: String,
+    password: String,
+    googleId: String,
+});
+
+userSchema.plugin(passportLocalMongoose);
+//userSchema.plugin(findOrCreate)
+
 const Story = mongoose.model("Story", storySchema);
 
-let continueStoryId = 0;  //for continue function
+const User = new mongoose.model("User", userSchema);
+
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+let continueStoryId = 0; 
+let currentUser = ""; //for continue function
 
 Story.findOne().sort({_id: -1}).limit(1).then(f =>{
     continueStoryId = f._id;   //gets id of latest added story
-    //console.log(continueStory);
 })
 
+
 app.get("/", function(req,res){
-    //console.log(continueStory);
+    if(req.isAuthenticated()){
     res.render("home",{
         storyId: continueStoryId
     });
+}else{
+    res.redirect("/auth")
+}
+});
+
+
+//Login page (get)
+app.get("/auth", function(req,res){
+    res.render("auth");
+});
+
+app.get("/login", function(req,res){
+    res.render("login");
+});
+
+app.get("/register", function(req,res){
+    res.render("register");
 });
 
 
 
+
+//Login page (post)
+app.post("/login", function(req,res){
+    const user = new User({
+        username: req.body.username,
+        password: req.body.password
+    });
+    req.login(user, function(err){
+        if(err){
+            console.log(err);
+        }
+        else{
+            passport.authenticate("local")(req, res, function(){
+                currentUser = req.user.username;
+                res.redirect("/");
+            })
+        }
+    })
+});
+
+app.post("/register", function(req,res){
+    User.register({username: req.body.username}, req.body.password, function(err,user){
+        if(err){
+            console.log(err);
+            res.redirect("/register");
+        }
+        else{
+            passport.authenticate("local")(req, res, function(){
+                currentUser = req.user.username;
+                res.redirect("/");
+            })
+        }
+    })
+});
+
+
+//Logout page
+app.get("/logout", function(req,res,next){
+    req.logout(function(err){
+        if(err){return next(err)}
+        res.redirect("/");
+    });
+    
+});
 
 
 //+ New Story Page
@@ -50,10 +142,9 @@ app.get("/newstory", function(req,res){
 })
 
 app.post("/newstory", function(req, res){
-    //console.log(req.body.storyTitle)
     const findTitle = req.body.storyTitle
     //only store stories with unique title
-    Story.countDocuments({title: findTitle}).then(f => {
+    Story.countDocuments({user:currentUser, title: findTitle}).then(f => {
         if(f>0){
             console.log("Story exists");
             
@@ -61,6 +152,7 @@ app.post("/newstory", function(req, res){
         }
         else{
               const story = new Story({
+                  user: currentUser,
                   title: req.body.storyTitle,
                   content: req.body.storyBody,
                 });
@@ -80,7 +172,7 @@ app.post("/newstory", function(req, res){
 
 //Read your Story page
 app.get("/read", function(req, res){
-Story.find().then(stories => {
+Story.find({user: currentUser}).then(stories => {
 res.render("read", {
     stories: stories,
     });
@@ -101,7 +193,7 @@ Story.findOne({_id: requestedStoryId}).then(story => {
 
 //Delete your Story
 app.get("/delete",function(req,res){
-    Story.find().then(stories =>{
+    Story.find({user: currentUser}).then(stories =>{
         res.render("delete",{
             stories: stories
         })
@@ -134,7 +226,7 @@ app.post("/delete",function(req,res){
 
 //Edit Story
 app.get("/edit",function(req,res){
-    Story.find().then(stories =>{
+    Story.find({user: currentUser}).then(stories =>{
         res.render("edit",{
             stories: stories
         })
