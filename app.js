@@ -1,5 +1,5 @@
 //jshint esversion:6
-
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -9,6 +9,8 @@ const mongoose = require("mongoose");
 const session = require('express-session');
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
+const GoogleStrategy = require( 'passport-google-oauth20' ).Strategy;
+const findOrCreate = require("mongoose-findorcreate");
 
 const app = express();
 
@@ -42,7 +44,7 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.plugin(passportLocalMongoose);
-//userSchema.plugin(findOrCreate)
+userSchema.plugin(findOrCreate)
 
 const Story = mongoose.model("Story", storySchema);
 
@@ -50,8 +52,43 @@ const User = new mongoose.model("User", userSchema);
 
 passport.use(User.createStrategy());
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
+
+passport.serializeUser(function(user, cb) {
+    process.nextTick(function() {
+      return cb(null, {
+        id: user.id,
+        username: user.username,
+        picture: user.picture
+      });
+    });
+  });
+  
+  passport.deserializeUser(function(user, cb) {
+    process.nextTick(function() {
+      return cb(null, user);
+    });
+  });
+
+passport.use(new GoogleStrategy({
+    clientID:     process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/google/secrets",
+    passReqToCallback   : true,
+    userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
+  },
+  function(request, accessToken, refreshToken, profile, done) {
+    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+      return done(err, user);
+    });
+  }
+));
+
+
+
+
+
 
 let continueStoryId = 0; 
 let currentUser = ""; //for continue function
@@ -67,14 +104,14 @@ app.get("/", function(req,res){
         storyId: continueStoryId
     });
 }else{
-    res.redirect("/auth")
+    res.redirect("/signin")
 }
 });
 
 
 //Login page (get)
-app.get("/auth", function(req,res){
-    res.render("auth");
+app.get("/signin", function(req,res){
+    res.render("signin");
 });
 
 app.get("/login", function(req,res){
@@ -85,6 +122,16 @@ app.get("/register", function(req,res){
     res.render("register");
 });
 
+app.get('/auth/google',
+  passport.authenticate('google', { scope:
+      [ 'email', 'profile' ] }
+));
+
+app.get( '/auth/google/secrets',
+    passport.authenticate( 'google', {
+        successRedirect: '/',
+        failureRedirect: '/login'
+}));
 
 
 
