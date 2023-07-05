@@ -56,6 +56,7 @@ passport.use(User.createStrategy());
 // passport.deserializeUser(User.deserializeUser());
 
 passport.serializeUser(function(user, cb) {
+    //console.log(user);
     process.nextTick(function() {
       return cb(null, {
         id: user.id,
@@ -79,7 +80,8 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(request, accessToken, refreshToken, profile, done) {
-    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+    User.findOrCreate({ googleId: profile.id, username: profile.emails[0].value }, function (err, user) {
+        currentUser = profile.emails[0].value;
       return done(err, user);
     });
   }
@@ -93,7 +95,7 @@ passport.use(new GoogleStrategy({
 let continueStoryId = 0; 
 let currentUser = ""; //for continue function
 
-Story.findOne().sort({_id: -1}).limit(1).then(f =>{
+Story.findOne().sort({_id: -1, user: currentUser}).limit(1).then(f =>{
     continueStoryId = f._id;   //gets id of latest added story
 })
 
@@ -174,6 +176,7 @@ app.post("/register", function(req,res){
 app.get("/logout", function(req,res,next){
     req.logout(function(err){
         if(err){return next(err)}
+        continueStoryId = 0;
         res.redirect("/");
     });
     
@@ -283,6 +286,9 @@ app.get("/edit",function(req,res){
 app.get("/stories/edit/:storyId", function(req, res){
     const requestedStoryId = req.params.storyId;
     continueStoryId = requestedStoryId;  //gets id of story recently edited
+    if(continueStoryId==="" || continueStoryId===null){
+        console.log("No Last Edited Stories");
+    }
     Story.findOne({_id: requestedStoryId}).then(story => {
         res.render("toeditstory", {
         title: story.title,
