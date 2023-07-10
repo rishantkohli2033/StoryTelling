@@ -95,16 +95,26 @@ passport.use(new GoogleStrategy({
 let continueStoryId = 0; 
 let currentUser = ""; //for continue function
 
-Story.findOne().sort({_id: -1, user: currentUser}).limit(1).then(f =>{
-    continueStoryId = f._id;   //gets id of latest added story
-})
+// Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{
+//     continueStoryId = f._id; 
+//     console.log(currentUser);
+//     console.log(f[0]._id);  //gets id of latest added story
+// })
 
 
 app.get("/", function(req,res){
     if(req.isAuthenticated()){
-    res.render("home",{
-        storyId: continueStoryId
+    //console.log(continueStoryId);
+    Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{
+        continueStoryId = f[0]._id; 
+        //console.log(currentUser);
+        console.log(continueStoryId);  //gets id of latest added story
+        res.render("home",{
+            storyId: continueStoryId
+        });
     });
+    
+    
 }else{
     res.redirect("/signin")
 }
@@ -285,6 +295,7 @@ app.get("/edit",function(req,res){
 });
 app.get("/stories/edit/:storyId", function(req, res){
     const requestedStoryId = req.params.storyId;
+    console.log(requestedStoryId)
     continueStoryId = requestedStoryId;  //gets id of story recently edited
     if(continueStoryId==="" || continueStoryId===null){
         console.log("No Last Edited Stories");
