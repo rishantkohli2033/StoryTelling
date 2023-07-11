@@ -105,11 +105,17 @@ app.get("/", function(req,res){
             Story.findOne({user: currentUser, continue: "1"}).then(f =>{
                 if(f===null){  //--> if no story has continue attribute as 1 
                     Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{  //-->gets id of latest added story, (used to make continue functionable)
-                    continueStoryId = f[0]._id;  
-                    f[0].continue = "1";
-                    res.render("home",{            //-->when this function was outside of Story.find() function then continueStoryId was storing only 0 untill we refresh the page, it started working
-                        storyId: continueStoryId  //when res.render() was brought inside Story.find()
-                    });
+                    if(f.length===0){
+                        res.render("home",{
+                            storyId: 0
+                        })
+                    }else{
+                        continueStoryId = f[0]._id;  
+                        f[0].continue = "1";
+                        res.render("home",{            //-->when this function was outside of Story.find() function then continueStoryId was storing only 0 untill we refresh the page, it started working
+                            storyId: continueStoryId  //when res.render() was brought inside Story.find()
+                        });
+                    }
                 });
                 }else { //--> if a story has continue attribute as 1
                 continueStoryId = f._id;
@@ -123,6 +129,7 @@ app.get("/", function(req,res){
     res.redirect("/signin")
 }
 });
+
 
 
 //Login/Register page (get)
@@ -215,14 +222,17 @@ app.post("/newstory", function(req, res){
             res.redirect("/newstory");
         }
         else{
-              const story = new Story({
-                  user: currentUser,
-                  title: req.body.storyTitle,
-                  content: req.body.storyBody,
-                  continue: "0"
-                });
-            
-                story.save();
+            Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(f => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists       
+                const story = new Story({
+                    user: currentUser,
+                    title: req.body.storyTitle,
+                    content: req.body.storyBody,
+                    continue: "1"
+                  });
+              
+                  story.save();
+            })
+              
             
                 res.redirect("/");
         }

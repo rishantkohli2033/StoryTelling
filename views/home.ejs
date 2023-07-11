@@ -13,8 +13,9 @@
                 <span class="visually-hidden"></span>
                 </button>
                 <ul class="dropdown-menu">
+                  <%if(storyId===0){%><li><a class="dropdown-item" href="/newstory">+ New Story</a></li><%}else{ %>
                 <li><a class="dropdown-item" href="/stories/edit/<%=storyId%>">Continue Story</a></li>
-                <li><a class="dropdown-item" href="/newstory">+ New Story</a></li>
+                <li><a class="dropdown-item" href="/newstory">+ New Story</a></li><%}%>
                 
                 </ul>
             </div>
