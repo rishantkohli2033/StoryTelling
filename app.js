@@ -1,4 +1,5 @@
 //jshint esversion:6
+//prerequisite code
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -35,6 +36,7 @@ const storySchema = {
     user: String,
     title: String,
     content: String,
+    continue: String,
 };
 
 const userSchema = new mongoose.Schema({
@@ -52,11 +54,8 @@ const User = new mongoose.model("User", userSchema);
 
 passport.use(User.createStrategy());
 
-// passport.serializeUser(User.serializeUser());
-// passport.deserializeUser(User.deserializeUser());
 
 passport.serializeUser(function(user, cb) {
-    //console.log(user);
     process.nextTick(function() {
       return cb(null, {
         id: user.id,
@@ -87,41 +86,46 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+//prerequisite code
+
+
+//-----------------------------------------------------------------------------------------------------------//
+
+
+//MAIN CODE
 
 
 
-
-
-let continueStoryId = 0; 
+let continueStoryId = 0; //for continue function
 let currentUser = ""; //for continue function
-
-// Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{
-//     continueStoryId = f._id; 
-//     console.log(currentUser);
-//     console.log(f[0]._id);  //gets id of latest added story
-// })
 
 
 app.get("/", function(req,res){
     if(req.isAuthenticated()){
-    //console.log(continueStoryId);
-    Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{
-        continueStoryId = f[0]._id; 
-        //console.log(currentUser);
-        console.log(continueStoryId);  //gets id of latest added story
-        res.render("home",{
-            storyId: continueStoryId
-        });
-    });
-    
-    
+            Story.findOne({user: currentUser, continue: "1"}).then(f =>{
+                if(f===null){  //--> if no story has continue attribute as 1 
+                    Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{  //-->gets id of latest added story, (used to make continue functionable)
+                    continueStoryId = f[0]._id;  
+                    f[0].continue = "1";
+                    res.render("home",{            //-->when this function was outside of Story.find() function then continueStoryId was storing only 0 untill we refresh the page, it started working
+                        storyId: continueStoryId  //when res.render() was brought inside Story.find()
+                    });
+                });
+                }else { //--> if a story has continue attribute as 1
+                continueStoryId = f._id;
+                res.render("home", {
+                    storyId: continueStoryId
+                });}
+
+            });
+      
 }else{
     res.redirect("/signin")
 }
 });
 
 
-//Login page (get)
+//Login/Register page (get)
 app.get("/signin", function(req,res){
     res.render("signin");
 });
@@ -147,7 +151,7 @@ app.get( '/auth/google/secrets',
 
 
 
-//Login page (post)
+//Login/Register page (post)
 app.post("/login", function(req,res){
     const user = new User({
         username: req.body.username,
@@ -215,6 +219,7 @@ app.post("/newstory", function(req, res){
                   user: currentUser,
                   title: req.body.storyTitle,
                   content: req.body.storyBody,
+                  continue: "0"
                 });
             
                 story.save();
@@ -294,12 +299,16 @@ app.get("/edit",function(req,res){
     
 });
 app.get("/stories/edit/:storyId", function(req, res){
-    const requestedStoryId = req.params.storyId;
-    console.log(requestedStoryId)
+    const requestedStoryId = req.params.storyId;                                    //--> Logic for continue button is that a number is assigned with
+                                                                                   //continue attribute i.e 0 or 1, the story that has attribute set as 1 will be our last edited story 
     continueStoryId = requestedStoryId;  //gets id of story recently edited
-    if(continueStoryId==="" || continueStoryId===null){
-        console.log("No Last Edited Stories");
-    }
+    Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(story => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists       
+        Story.updateOne({_id: requestedStoryId, user: currentUser},{$set: {continue: "1"}}).then(story => { // After resetting the continue attribute to 0 in the outer function, the inner function will set the continue attribute for the current story of the current user to 1
+            console.log("Edit continue updated successfully");                                              // which means that this story will be considered the latest edited story
+            
+        })
+    })
+    
     Story.findOne({_id: requestedStoryId}).then(story => {
         res.render("toeditstory", {
         title: story.title,
