@@ -58,7 +58,7 @@ const Story = mongoose.model("Story", storySchema);
 
 const User = new mongoose.model("User", userSchema);
 
-const Publish = new mongoose.model("Publish", publishSchema);
+const Publish = mongoose.model("Publish", publishSchema);
 
 passport.use(User.createStrategy());
 
@@ -392,7 +392,11 @@ app.post("/publish",function(req,res){
 //Community
 app.get("/community",function(req,res){
     
-    res.render("community");
+    Publish.find().then(pubStories =>{
+        res.render("community",{
+            pubStories: pubStories,
+        })
+    })
 });
 
 app.listen(3000, function() {

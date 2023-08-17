@@ -1,5 +1,18 @@
 <%- include("partials/header"); -%>
 
+<%  pubStories.forEach(function(pubStory){ %>
 
+    <h1><%=pubStory.pubTitle%></h1>
+    <p>
+    <% if(pubStory.pubContent.length>=100){ %>
+    <%=pubStory.pubContent.substring(0, 100) + " ..."%>
+    <a href="/stories/<%=pubStory._id%>">Read More</a>
+    <% } else{ %>
+        <%=pubStory.pubContent%>
+    <% } %>
+    </p>
+
+
+    <% }) %>
 
 <%- include("partials/footer"); -%>
