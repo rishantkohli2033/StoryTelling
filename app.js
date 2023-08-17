@@ -45,12 +45,20 @@ const userSchema = new mongoose.Schema({
     googleId: String,
 });
 
+const publishSchema = new mongoose.Schema({
+    pubUser: String,
+    pubTitle: String,
+    pubContent: String,
+});
+
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate)
 
 const Story = mongoose.model("Story", storySchema);
 
 const User = new mongoose.model("User", userSchema);
+
+const Publish = new mongoose.model("Publish", publishSchema);
 
 passport.use(User.createStrategy());
 
@@ -227,7 +235,8 @@ app.post("/newstory", function(req, res){
                     user: currentUser,
                     title: req.body.storyTitle,
                     content: req.body.storyBody,
-                    continue: "1"
+                    continue: "1",
+                    publish: "no"
                   });
               
                   story.save();
@@ -345,6 +354,46 @@ app.post("/toeditstory", function(req, res){
 
 
 
+
+//Publish
+app.get("/publish",function(req,res){
+    Story.find({user: currentUser}).then(stories =>{
+        res.render("publish",{
+            stories: stories
+        })
+    })
+});
+
+
+
+app.post("/publish",function(req,res){
+    const storiesId = req.body.input;
+    
+        Story.findOne({_id: storiesId}).then(stories=>{
+            console.log(stories.user)
+            const pub = new Publish({
+                pubUser: stories.user,
+                pubTitle: stories.title,
+                pubContent: stories.content,
+        
+              });
+            pub.save().then(f =>{
+                console.log("saved successfully");
+            });
+        })
+        
+   
+    res.render("common")
+
+})
+
+
+
+//Community
+app.get("/community",function(req,res){
+    
+    res.render("community");
+});
 
 app.listen(3000, function() {
     console.log("Server started on port 3000");
