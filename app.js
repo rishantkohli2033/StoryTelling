@@ -368,19 +368,24 @@ app.get("/publish",function(req,res){
 
 app.post("/publish",function(req,res){
     const storiesId = req.body.input;
-    
-        Story.findOne({_id: storiesId}).then(stories=>{
-            console.log(stories.user)
-            const pub = new Publish({
-                pubUser: stories.user,
-                pubTitle: stories.title,
-                pubContent: stories.content,
-        
-              });
-            pub.save().then(f =>{
-                console.log("saved successfully");
+        Story.findOne({_id: storiesId}).then(story=>{
+            Publish.countDocuments({pubUser:story.user, pubTitle: story.title, pubContent: story.content}).then(e => {
+                if(e>0){
+                    console.log("Story already published");
+                }else{
+                    const pub = new Publish({
+                        pubUser: story.user,
+                        pubTitle: story.title,
+                        pubContent: story.content,
+                
+                      });
+                    pub.save().then(f =>{
+                        console.log("saved successfully");
+                    });
+                }
             });
-        })
+            
+        });
         
    
     res.render("common")

@@ -4,7 +4,7 @@
     <form action="/publish" method="post">
     <%  stories.forEach(function(story){ %>
 
-        <input type="checkbox" value="<%=story._id%>" name="input" id="<%=story._id%>"><%=story.title%></input>
+        <input type="radio" value="<%=story._id%>" name="input" id="<%=story._id%>"><%=story.title%></input>
         <p>
         <% if(story.content.length>=100){ %>
         <%=story.content.substring(0, 100) + " ..."%>
