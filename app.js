@@ -368,10 +368,21 @@ app.get("/publish",function(req,res){
 
 app.post("/publish",function(req,res){
     const storiesId = req.body.input;
+    //console.log(storiesId);
+    if(storiesId === undefined){
+        console.log("No stories selected"); 
+        res.render("common", {
+            output: "Not selected"
+        });
+    }
+    else{
         Story.findOne({_id: storiesId}).then(story=>{
             Publish.countDocuments({pubUser:story.user, pubTitle: story.title, pubContent: story.content}).then(e => {
                 if(e>0){
                     console.log("Story already published");
+                    res.render("common",{
+                        output: "already published"
+                    })
                 }else{
                     const pub = new Publish({
                         pubUser: story.user,
@@ -382,13 +393,16 @@ app.post("/publish",function(req,res){
                     pub.save().then(f =>{
                         console.log("saved successfully");
                     });
+                    res.render("common",{
+                        output: "Published Succesfully"
+                    })
                 }
             });
             
         });
         
-   
-    res.render("common")
+    }
+    
 
 })
 

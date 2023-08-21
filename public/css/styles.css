@@ -55,3 +55,10 @@ html {
   padding-top: 200px;
   padding-bottom: 200px;
 }
+small{
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.text-muted{
+  text-align: center;
+}
