@@ -12,6 +12,7 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require( 'passport-google-oauth20' ).Strategy;
 const findOrCreate = require("mongoose-findorcreate");
+const { generateFromEmail, generateUsername } = require("unique-username-generator");
 
 const app = express();
 
@@ -34,19 +35,23 @@ mongoose.connect("mongodb://127.0.0.1:27017/storyDB", {useNewUrlParser: true});
 
 const storySchema = {
     user: String,
+    writtenby: String,
     title: String,
     content: String,
     continue: String,
 };
 
 const userSchema = new mongoose.Schema({
-    email: String,
-    password: String,
     googleId: String,
+    email: String,
+    username: String,
+    password: String,
+    
 });
 
 const publishSchema = new mongoose.Schema({
     pubUser: String,
+    pubUsername: String,
     pubTitle: String,
     pubContent: String,
 });
@@ -87,11 +92,30 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(request, accessToken, refreshToken, profile, done) {
-    User.findOrCreate({ googleId: profile.id, username: profile.emails[0].value }, function (err, user) {
-        currentUser = profile.emails[0].value;
-      return done(err, user);
-    });
-  }
+    User.findOne({
+        googleId: profile.id, 
+        email: profile.emails[0].value 
+    }).then(user => {
+        if(!user){
+            const alias = generateUsername();
+            user = new User({
+                googleId: profile.id,
+                email: profile.emails[0].value,
+                username: alias,
+            });
+            user.save().then(u =>{
+                return done(null,user);
+            }).catch((err) =>{
+                return done(err);
+            });
+        } else {
+            currentUser = profile.emails[0].value;
+            return done(null, user);
+        }
+    }).catch((err) =>{
+        return done(err);
+    }); 
+}       
 ));
 
 //prerequisite code
@@ -138,6 +162,20 @@ app.get("/", function(req,res){
 }
 });
 
+app.post("/", function(req,res){
+    const username = req.body.byUser;
+    //const username = generateUsername();
+    Publish.countDocuments({pubUsername: username}).then(f => {
+        if(f>0){
+            console.log("username exists");
+        }else{
+            Story.updateMany({writtenby: username}).then(f=>{
+                console.log("username saved");
+            })
+            
+        }
+    })
+});
 
 
 //Login/Register page (get)
@@ -230,16 +268,21 @@ app.post("/newstory", function(req, res){
             res.redirect("/newstory");
         }
         else{
-            Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(f => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists       
-                const story = new Story({
-                    user: currentUser,
-                    title: req.body.storyTitle,
-                    content: req.body.storyBody,
-                    continue: "1",
-                    publish: "no"
-                  });
-              
-                  story.save();
+            Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(f => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists      
+                User.findOne({email: currentUser}).then(us =>{
+                    //console.log(user);
+                    const story = new Story({
+                        user: currentUser,
+                        writtenby: us.username,
+                        title: req.body.storyTitle,
+                        content: req.body.storyBody,
+                        continue: "1",
+                        publish: "no"
+                      });
+                  
+                      story.save();
+                })
+                
             })
               
             
@@ -367,8 +410,9 @@ app.get("/publish",function(req,res){
 
 
 app.post("/publish",function(req,res){
-    const storiesId = req.body.input;
-    //console.log(storiesId);
+const storiesId = req.body.input;
+const pubButton = req.body.PubButton;
+if(pubButton==="UserButton"){
     if(storiesId === undefined){
         console.log("No stories selected"); 
         res.render("common", {
@@ -386,10 +430,11 @@ app.post("/publish",function(req,res){
                 }else{
                     const pub = new Publish({
                         pubUser: story.user,
+                        pubUsername: story.writtenby,
                         pubTitle: story.title,
                         pubContent: story.content,
                 
-                      });
+                    });
                     pub.save().then(f =>{
                         console.log("saved successfully");
                     });
@@ -402,6 +447,9 @@ app.post("/publish",function(req,res){
         });
         
     }
+}else if(pubButton==="AnonyButton"){
+    
+}   
     
 
 })

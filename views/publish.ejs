@@ -1,5 +1,6 @@
 <%- include("partials/header"); -%>
-<h1>Publish Story</h1><br>
+<h1>Publish Story</h1>
+<br>
 <% if(stories.length!=0){ %>
     <form action="/publish" method="post">
     <%  stories.forEach(function(story){ %>
@@ -16,7 +17,8 @@
         <% }) %>
         
             <div class="text-center">
-                <button class="btn btn-primary" type="submit" name="button" value="new">Publish</button>
+                <button class="btn btn-primary" type="submit" name="PubButton" value="UserButton">Publish</button>
+                <button class="btn btn-primary" type="submit" name="PubButton" value="AnonyButton">New</button>
             </div>
     </form><% } else { %>
     <div class="text-center noStoriesDelPage">

@@ -2,7 +2,7 @@
     <%  pubStories.forEach(function(pubStory){ %>
 
         <h1><%=pubStory.pubTitle%> </h1>
-        <p class="text-muted"><small>~~by <%= pubStory.pubUser %></small></p>
+        <p class="text-muted"><small>~~by <%= pubStory.pubUsername %></small></p>
         <p>
         <% if(pubStory.pubContent.length>=100){ %>
         <%=pubStory.pubContent.substring(0, 100) + " ..."%>
