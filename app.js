@@ -163,15 +163,25 @@ app.get("/", function(req,res){
 });
 
 app.post("/", function(req,res){
-    const username = req.body.byUser;
+    const username = req.user.username;
+    const tobeUsername = req.body.byUser;
+    console.log(tobeUsername);
+    console.log(username);
     //const username = generateUsername();
-    Publish.countDocuments({pubUsername: username}).then(f => {
+    Publish.countDocuments({pubUsername: tobeUsername}).then(f => {
         if(f>0){
             console.log("username exists");
         }else{
-            Story.updateMany({writtenby: username}).then(f=>{
-                console.log("username saved");
+            User.findOneAndUpdate({username: req.user.username},{$set: {username: req.body.byUser}}).then(a =>{
+                Story.updateMany({writtenby: req.user.username},{$set: {writtenby: req.body.byUser}}).then(b =>{
+                    Publish.updateMany({pubUsername: req.user.username}, {$set: {pubUsername: req.body.byUser}}).then(c =>{
+                        console.log("publish username saved");
+                    })
+                    console.log("story username saved");
+                })
+                console.log("user username saved");
             })
+            
             
         }
     })
