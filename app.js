@@ -43,8 +43,8 @@ const storySchema = {
 
 const userSchema = new mongoose.Schema({
     googleId: String,
-    email: String,
     username: String,
+    aka: String,
     password: String,
     
 });
@@ -94,14 +94,14 @@ passport.use(new GoogleStrategy({
   function(request, accessToken, refreshToken, profile, done) {
     User.findOne({
         googleId: profile.id, 
-        email: profile.emails[0].value 
+        username: profile.emails[0].value 
     }).then(user => {
         if(!user){
             const alias = generateUsername();
             user = new User({
                 googleId: profile.id,
-                email: profile.emails[0].value,
-                username: alias,
+                username: profile.emails[0].value,
+                aka: alias,
             });
             user.save().then(u =>{
                 return done(null,user);
@@ -165,16 +165,14 @@ app.get("/", function(req,res){
 app.post("/", function(req,res){
     const username = req.user.username;
     const tobeUsername = req.body.byUser;
-    console.log(tobeUsername);
-    console.log(username);
     //const username = generateUsername();
     Publish.countDocuments({pubUsername: tobeUsername}).then(f => {
         if(f>0){
             console.log("username exists");
         }else{
-            User.findOneAndUpdate({username: req.user.username},{$set: {username: req.body.byUser}}).then(a =>{
-                Story.updateMany({writtenby: req.user.username},{$set: {writtenby: req.body.byUser}}).then(b =>{
-                    Publish.updateMany({pubUsername: req.user.username}, {$set: {pubUsername: req.body.byUser}}).then(c =>{
+            User.findOneAndUpdate({username: username},{$set: {aka: tobeUsername}}).then(a =>{
+                Story.updateMany({user: username},{$set: {writtenby: tobeUsername}}).then(b =>{
+                    Publish.updateMany({pubUser: username}, {$set: {pubUsername: tobeUsername}}).then(c =>{
                         console.log("publish username saved");
                     })
                     console.log("story username saved");
@@ -234,7 +232,8 @@ app.post("/login", function(req,res){
 });
 
 app.post("/register", function(req,res){
-    User.register({username: req.body.username}, req.body.password, function(err,user){
+    const alias = generateUsername();
+    User.register({username: req.body.username, aka: alias}, req.body.password, function(err,user){
         if(err){
             console.log(err);
             res.redirect("/register");
@@ -279,11 +278,12 @@ app.post("/newstory", function(req, res){
         }
         else{
             Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(f => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists      
-                User.findOne({email: currentUser}).then(us =>{
-                    //console.log(user);
+                console.log(currentUser);
+                User.findOne({username: currentUser}).then(us =>{
+                    console.log(us);
                     const story = new Story({
                         user: currentUser,
-                        writtenby: us.username,
+                        writtenby: us.aka,
                         title: req.body.storyTitle,
                         content: req.body.storyBody,
                         continue: "1",
