@@ -134,30 +134,35 @@ let currentUser = ""; //for continue function
 
 
 app.get("/", function(req,res){
+   
     if(req.isAuthenticated()){
-        //console.log(currentUser);
+        User.findOne({username: req.user.username}).then(user =>{
             Story.findOne({user: currentUser, continue: "1"}).then(f =>{
                 if(f===null){  //--> if no story has continue attribute as 1 
                     Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{  //-->gets id of latest added story, (used to make continue functionable)
                     if(f.length===0){
                         res.render("home",{
-                            storyId: 0
+                            storyId: 0,
+                            username: user.aka 
                         })
                     }else{
                         continueStoryId = f[0]._id;  
                         f[0].continue = "1";
                         res.render("home",{            //-->when this function was outside of Story.find() function then continueStoryId was storing only 0 untill we refresh the page, it started working
-                            storyId: continueStoryId  //when res.render() was brought inside Story.find()
+                            storyId: continueStoryId,  //when res.render() was brought inside Story.find()
+                            username: user.aka 
                         });
                     }
                 });
                 }else { //--> if a story has continue attribute as 1
                 continueStoryId = f._id;
                 res.render("home", {
-                    storyId: continueStoryId
+                    storyId: continueStoryId,
+                    username: user.aka 
                 });}
 
             });
+        })
       
 }else{
     res.redirect("/signin")
@@ -273,7 +278,6 @@ app.post("/newstory", function(req, res){
     const findTitle = req.body.storyTitle
     //only store stories with unique title
     Story.countDocuments({user:currentUser, title: findTitle}).then(f => {
-        console.log("f: "+f);
         if(f>0){
             console.log("Story exists");
             
