@@ -92,11 +92,11 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(request, accessToken, refreshToken, profile, done) {
-    User.findOne({
+    User.findOne({  //findOrCreate function is divided like this so that new users can be added with a unique username
         googleId: profile.id, 
         username: profile.emails[0].value 
     }).then(user => {
-        if(!user){
+        if(!user){ //if no user is found
             const alias = generateUsername();
             user = new User({
                 googleId: profile.id,
@@ -104,12 +104,13 @@ passport.use(new GoogleStrategy({
                 aka: alias,
             });
             user.save().then(u =>{
+                currentUser = u.username; //this user's email will be currentUser
                 return done(null,user);
             }).catch((err) =>{
                 return done(err);
             });
-        } else {
-            currentUser = profile.emails[0].value;
+        } else { //if user is found
+            currentUser = profile.emails[0].value;  //this user's email will be currentUser
             return done(null, user);
         }
     }).catch((err) =>{
@@ -134,6 +135,7 @@ let currentUser = ""; //for continue function
 
 app.get("/", function(req,res){
     if(req.isAuthenticated()){
+        //console.log(currentUser);
             Story.findOne({user: currentUser, continue: "1"}).then(f =>{
                 if(f===null){  //--> if no story has continue attribute as 1 
                     Story.find({user: currentUser}).sort({_id: -1}).limit(1).then(f =>{  //-->gets id of latest added story, (used to make continue functionable)
@@ -271,6 +273,7 @@ app.post("/newstory", function(req, res){
     const findTitle = req.body.storyTitle
     //only store stories with unique title
     Story.countDocuments({user:currentUser, title: findTitle}).then(f => {
+        console.log("f: "+f);
         if(f>0){
             console.log("Story exists");
             
@@ -278,9 +281,7 @@ app.post("/newstory", function(req, res){
         }
         else{
             Story.updateOne({user: currentUser, continue: "1"},{$set: {continue: "0"}}).then(f => { //--> here we are finding the story of currentUser with continue attribute set to 1. If found then it is set to 0 to ensure that no other stories with an attribute of 1 exists      
-                console.log(currentUser);
                 User.findOne({username: currentUser}).then(us =>{
-                    console.log(us);
                     const story = new Story({
                         user: currentUser,
                         writtenby: us.aka,
